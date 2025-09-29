@@ -3,7 +3,6 @@ import { put, pk, skRound } from "./lib/db";
 
 export async function handler() {
 	const roomId = randomUUID().slice(0, 8);
-	const adminToken = randomUUID();
 	const now = Math.floor(Date.now() / 1000);
 	const ttl = now + 60 * 60 * 24 * 7;
 
@@ -12,7 +11,6 @@ export async function handler() {
 		SK: "ROOM",
 		schemaVersion: 2,
 		roomId,
-		adminToken,
 		currentRound: 1,
 		roundsCount: 1,
 		createdAt: now,
@@ -34,6 +32,6 @@ export async function handler() {
 			"content-type": "application/json",
 			"access-control-allow-origin": "*"
 		},
-		body: JSON.stringify({ roomId, adminToken }),
+		body: JSON.stringify({ roomId }),
 	};
 }

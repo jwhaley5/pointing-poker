@@ -2,12 +2,12 @@ import { listRoomItems, pk, update } from "./lib/db";
 import { broadcast } from "./lib/ws";
 
 export async function handler(event: any) {
-	const { roomId, adminToken } = JSON.parse(event.body || "{}");
-	if (!roomId || !adminToken) return { statusCode: 400, body: "roomId and adminToken required" };
+	const { roomId } = JSON.parse(event.body || "{}");
+	if (!roomId) return { statusCode: 400, body: "roomId required" };
 
 	const items = await listRoomItems(roomId);
 	const room = items.find((i: any) => i.SK === "ROOM");
-	if (!room || room.adminToken !== adminToken) return { statusCode: 403, body: "forbidden" };
+	if (!room) return { statusCode: 403, body: "forbidden" };
 
 	const round = room.currentRound ?? 1;
 	const roundKey = `ROUND#${round.toString().padStart(4, "0")}`;

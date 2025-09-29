@@ -9,7 +9,8 @@ export async function handler(event: any) {
 	const memberId = connectionId;
 	const now = Math.floor(Date.now() / 1000);
 
-	await put({ PK: pk(roomId), SK: `CONN#${connectionId}`, connectionId, memberId, ttl: now + 60 * 60 * 24 });
+	const connectionRecord = { PK: pk(roomId), SK: `CONN#${connectionId}`, connectionId, memberId, ttl: now + 60 * 60 * 24 };
+	await put(connectionRecord);
 	await put({ PK: pk(roomId), SK: `MEMBER#${memberId}`, memberId, name, present: true, joinedAt: now });
 
 	// Build snapshot

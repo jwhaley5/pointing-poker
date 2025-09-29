@@ -31,7 +31,7 @@ export async function handler(event: any) {
 	const voteItems = refreshed.filter((i: any) => i.SK.startsWith(votePrefix));
 
 	const votes: Record<string, string | null> = Object.fromEntries(members.map((m: any) => [m.memberId, null]));
-	for (const v of voteItems) votes[v.memberId] = revealed ? v.value ?? null : null;
+	for (const v of voteItems) votes[v.memberId] = v.value ?? null;
 
 	const connections = refreshed.filter((i: any) => i.SK.startsWith("CONN#")).map((i: any) => i.connectionId);
 

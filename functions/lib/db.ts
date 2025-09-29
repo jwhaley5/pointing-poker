@@ -6,7 +6,7 @@ import { Resource } from "sst";
 const ddb = new DynamoDBClient({});
 
 // Because your construct name contains dashes, use bracket notation:
-const TABLE = Resource["johnWhaley-poker-pokerTable"].name as string;
+export const TABLE = Resource["johnWhaley-poker-pokerTable"].name as string;
 
 export const pk = (roomId: string) => `ROOM#${roomId}`;
 const roundStr = (n: number) => n.toString().padStart(4, "0");
@@ -30,13 +30,18 @@ export async function put(item: any) {
 }
 
 export async function update(keys: any, expr: string, names: any, values: any) {
-	await ddb.send(new UpdateItemCommand({
+	const command: any = {
 		TableName: TABLE,
 		Key: marshall(keys),
 		UpdateExpression: expr,
-		ExpressionAttributeNames: names,
 		ExpressionAttributeValues: marshall(values),
-	}));
+	};
+	
+	if (names && Object.keys(names).length > 0) {
+		command.ExpressionAttributeNames = names;
+	}
+	
+	await ddb.send(new UpdateItemCommand(command));
 }
 
 export async function del(keys: any) {

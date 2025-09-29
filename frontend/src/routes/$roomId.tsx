@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 type Member = { memberId: string; name: string; present: boolean }
 type Snapshot = {
@@ -17,6 +17,7 @@ export const Route = createFileRoute('/$roomId')({
 })
 
 function RoomPage() {
+
 	const { roomId } = Route.useParams()
 	const navigate = useNavigate()
 
@@ -27,11 +28,9 @@ function RoomPage() {
 	const [name, setName] = useState(localStorage.getItem('pp:name') ?? '')
 	const [roundTitle, setRoundTitle] = useState('')
 
-	const adminToken = useMemo(
-		() => localStorage.getItem(`adminToken:${roomId}`) ?? '',
-		[roomId]
-	)
 
+
+	console.log(socket);
 	// open websocket
 	useEffect(() => {
 		const ws = new WebSocket(import.meta.env.VITE_WS_URL)
@@ -54,9 +53,11 @@ function RoomPage() {
 		ws.addEventListener('close', onClose)
 
 		return () => {
+
 			ws.removeEventListener('open', onOpen)
 			ws.removeEventListener('message', onMessage)
 			ws.removeEventListener('close', onClose)
+
 			ws.close()
 		}
 	}, [roomId])
@@ -78,16 +79,13 @@ function RoomPage() {
 	}
 
 	const reveal = () => {
-		if (!adminToken) return
-		send({ action: 'reveal', roomId, adminToken })
+		send({ action: 'reveal', roomId })
 	}
 
 	const startRound = () => {
-		if (!adminToken) return
 		send({
 			action: 'startRound',
 			roomId,
-			adminToken,
 			title: roundTitle.trim() || undefined,
 		})
 		setRoundTitle('')
@@ -97,13 +95,19 @@ function RoomPage() {
 	const CARDS = ['0', '0.5', '1', '2', '3', '5', '8', '13', '20', '40', '100', '?', '☕']
 
 	return (
-		<div className="max-w-5xl mx-auto p-4 space-y-6">
+		<div className="max-w-7xl mx-auto p-4 pt-20 space-y-6">
 			<header className="flex items-center justify-between gap-4">
 				<div>
 					<h1 className="text-2xl font-bold">Room {roomId}</h1>
-					<p className="text-sm opacity-70">
-						{wsReady ? 'Connected' : 'Connecting…'}
-					</p>
+					<div className="flex items-center gap-2">
+						<div className="inline-grid *:[grid-area:1/1]">
+							<div className={`status ${wsReady ? "status-success" : "status-info"} animate-ping`} />
+							<div className={`status ${wsReady ? "status-success" : "status-info"} `} />
+						</div>
+						<p className="text-sm opacity-70">
+							{wsReady ? "Connected" : "Connecting"}
+						</p>
+					</div>
 				</div>
 				<div className="flex gap-2">
 					<button
@@ -118,22 +122,19 @@ function RoomPage() {
 				</div>
 			</header>
 
-			{/* join gate */}
-			{(
-				<div className="card bg-base-200 p-4">
-					<div className="flex flex-col sm:flex-row gap-2">
-						<input
-							className="input input-bordered flex-1"
-							placeholder="Enter your name"
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-						/>
-						<button className="btn btn-primary" onClick={doJoin} disabled={!wsReady}>
-							Join
-						</button>
-					</div>
+			<div className="card bg-base-200 p-4">
+				<div className="flex flex-col sm:flex-row gap-2">
+					<input
+						className="input input-bordered flex-1"
+						placeholder="Enter your name"
+						value={name}
+						onChange={(e) => setName(e.target.value)}
+					/>
+					<button className="btn btn-primary" onClick={doJoin} disabled={!wsReady || !name}>
+						Join
+					</button>
 				</div>
-			)}
+			</div>
 
 			{/* room view */}
 			{snap && (
@@ -150,29 +151,26 @@ function RoomPage() {
 									</p>
 								</div>
 
-								{/* admin controls */}
-								{adminToken && (
-									<div className="flex items-center gap-2">
-										<button
-											className="btn btn-accent"
-											onClick={reveal}
-											disabled={snap.revealed}
-										>
-											Reveal
+								<div className="flex items-center gap-2">
+									<button
+										className="btn btn-accent"
+										onClick={reveal}
+										disabled={snap.revealed}
+									>
+										Reveal
+									</button>
+									<div className="join">
+										<input
+											className="input input-bordered join-item"
+											placeholder="Next round title"
+											value={roundTitle}
+											onChange={(e) => setRoundTitle(e.target.value)}
+										/>
+										<button className="btn btn-warning join-item" onClick={startRound}>
+											Start next round
 										</button>
-										<div className="join">
-											<input
-												className="input input-bordered join-item"
-												placeholder="Next round title"
-												value={roundTitle}
-												onChange={(e) => setRoundTitle(e.target.value)}
-											/>
-											<button className="btn btn-warning join-item" onClick={startRound}>
-												Start next round
-											</button>
-										</div>
 									</div>
-								)}
+								</div>
 							</div>
 						</div>
 
@@ -194,17 +192,8 @@ function RoomPage() {
 								Votes {snap.revealed ? '' : '(hidden)'}
 							</h3>
 							<ul className="divide-y">
-								{snap.members.map((m) => (
-									<li key={m.memberId} className="py-2 flex items-center justify-between">
-										<span>{m.name}</span>
-										<span className="badge badge-lg">
-											{snap.revealed
-												? snap.votes[m.memberId] ?? '—'
-												: snap.votes[m.memberId] != null
-													? '✔︎'
-													: '…'}
-										</span>
-									</li>
+								{snap.members.filter(item => item.present).map((m) => (
+									<VoteRow key={m.memberId} m={m} snap={snap} />
 								))}
 							</ul>
 
@@ -228,16 +217,20 @@ function RoomPage() {
 						<div className="card bg-base-200 p-4">
 							<h3 className="font-semibold mb-2">Members</h3>
 							<ul className="list-disc ml-5">
+								{snap.members.filter((item) => item.present).map((m) => (
+									<li key={m.memberId}>{m.name}</li>
+								))}
+							</ul>
+						</div>
+						<div className="card bg-base-200 p-4">
+							<h3 className="font-semibold mb-2">History</h3>
+							<ul className="list-disc ml-5">
 								{snap.members.map((m) => (
 									<li key={m.memberId}>{m.name}</li>
 								))}
 							</ul>
 						</div>
-						{adminToken && (
-							<div className="card bg-base-200 p-4 text-sm opacity-70">
-								You’re the creator in this browser (admin actions enabled).
-							</div>
-						)}
+
 					</aside>
 				</div>
 			)}
@@ -249,5 +242,22 @@ function RoomPage() {
 				</div>
 			)}
 		</div>
+	)
+}
+
+
+const VoteRow = ({ m, snap }: { m: Member, snap: Snapshot }) => {
+	console.log(snap);
+	return (
+		<li key={m.memberId} className="py-2 flex items-center justify-between">
+			<span>{m.name}</span>
+			<span className="badge badge-lg flex items-center justify-center">
+				{snap.revealed
+					? snap.votes[m.memberId] ?? '—'
+					: snap.votes[m.memberId] != null
+						? '✔︎'
+						: '…'}
+			</span>
+		</li>
 	)
 }
