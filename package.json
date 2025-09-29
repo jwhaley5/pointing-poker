@@ -1,0 +1,35 @@
+{
+	"name": "pointing-poker",
+	"version": "1.0.0",
+	"main": "index.js",
+	"scripts": {
+		"dev": "sst dev",
+		"deploy": "sst deploy",
+		"remove": "sst remove",
+		"typecheck": "tsc --noEmit"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/jwhaley5/pointing-poker"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/jwhaley5/pointing-poker/issues"
+	},
+	"homepage": "https://github.com/jwhaley5/pointing-poker#readme",
+	"description": "",
+	"devDependencies": {
+		"@aws-sdk/client-apigatewaymanagementapi": "^3.896.0",
+		"@aws-sdk/client-dynamodb": "^3.896.0",
+		"@aws-sdk/util-dynamodb": "^3.896.0",
+		"@types/aws-lambda": "8.10.152",
+		"esbuild": "^0.25.10",
+		"sst": "^3.17.14",
+		"typescript": "^5.9.2"
+	},
+	"dependencies": {
+		"sst": "3.17.14"
+	}
+}
