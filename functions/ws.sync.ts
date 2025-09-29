@@ -1,6 +1,5 @@
 import { listRoomItems } from "./lib/db";
-import { wsClient } from "./lib/ws";
-import { PostToConnectionCommand } from "@aws-sdk/client-apigatewaymanagementapi";
+import { broadcast } from "./lib/ws";
 
 export async function handler(event: any) {
 	const { connectionId } = event.requestContext;
@@ -23,19 +22,15 @@ export async function handler(event: any) {
 	const votes: Record<string, string | null> = Object.fromEntries(members.map((m: any) => [m.memberId, null]));
 	for (const v of voteItems) votes[v.memberId] = revealed ? v.value ?? null : null;
 
-	const client = wsClient();
-	await client.send(new PostToConnectionCommand({
-		ConnectionId: connectionId,
-		Data: Buffer.from(JSON.stringify({
-			type: "room",
-			roomId,
-			currentRound: round,
-			roundTitle: roundItem.title,
-			revealed,
-			members,
-			votes,
-		})),
-	}));
+	await broadcast([connectionId], {
+		type: "room",
+		roomId,
+		currentRound: round,
+		roundTitle: roundItem.title,
+		revealed,
+		members,
+		votes,
+	});
 
 	return { statusCode: 200 };
 }

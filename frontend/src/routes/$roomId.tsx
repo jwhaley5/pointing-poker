@@ -39,7 +39,6 @@ function RoomPage() {
 
 		const onOpen = () => {
 			setWsReady(true)
-			// ask server for the latest snapshot
 			ws.send(JSON.stringify({ action: 'sync', roomId }))
 		}
 		const onMessage = (e: MessageEvent) => {
@@ -120,7 +119,7 @@ function RoomPage() {
 			</header>
 
 			{/* join gate */}
-			{!name && (
+			{(
 				<div className="card bg-base-200 p-4">
 					<div className="flex flex-col sm:flex-row gap-2">
 						<input

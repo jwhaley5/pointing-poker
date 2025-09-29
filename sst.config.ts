@@ -25,22 +25,22 @@ export default $config({
 		const ws = new sst.aws.ApiGatewayWebSocket("johnwhaley-poker-wsApi")
 
 		const wsCommon: sst.aws.FunctionArgs = {
-			handler: "functions/ws.default",
-			link: [table],
+			handler: "functions/ws.default.handler",
+			link: [table, ws],
 			environment: {
 				WS_MANAGEMENT_ENDPOINT: ws.managementEndpoint
 			},
-		} as const
+		};
 
-		ws.route("$connect", { ...wsCommon, handler: "functions/ws.connect" });
-		ws.route("$disconnect", { ...wsCommon, handler: "functions/ws.disconnect" });
+		ws.route("$connect", { ...wsCommon, handler: "functions/ws.connect.handler" });
+		ws.route("$disconnect", { ...wsCommon, handler: "functions/ws.disconnect.handler" });
 		ws.route("$default", wsCommon);
 
-		ws.route("join", { ...wsCommon, handler: "functions/ws.join" });
-		ws.route("vote", { ...wsCommon, handler: "functions/ws.vote" });
-		ws.route("reveal", { ...wsCommon, handler: "functions/ws.reveal" });
-		ws.route("startRound", { ...wsCommon, handler: "functions/ws.startRound" });
-		ws.route("sync", { ...wsCommon, handler: "functions/ws.sync" });
+		ws.route("join", { ...wsCommon, handler: "functions/ws.join.handler" });
+		ws.route("vote", { ...wsCommon, handler: "functions/ws.vote.handler" });
+		ws.route("reveal", { ...wsCommon, handler: "functions/ws.reveal.handler" });
+		ws.route("startRound", { ...wsCommon, handler: "functions/ws.startRound.handler" });
+		ws.route("sync", { ...wsCommon, handler: "functions/ws.sync.handler" });
 
 		const api = new sst.aws.ApiGatewayV2("johnwhaley-poker-httpApi");
 

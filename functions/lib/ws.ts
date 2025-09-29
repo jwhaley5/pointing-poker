@@ -8,9 +8,16 @@ export function wsClient() {
 export async function broadcast(connectionIds: string[], payload: any) {
 	const client = wsClient();
 	const Data = Buffer.from(JSON.stringify(payload));
-	await Promise.allSettled(
+	const results = await Promise.allSettled(
 		connectionIds.map((ConnectionId) =>
 			client.send(new PostToConnectionCommand({ ConnectionId, Data }))
 		)
 	);
+
+	// Log any failures
+	results.forEach((result, index) => {
+		if (result.status === 'rejected') {
+			console.error(`Failed to send message to connection ${connectionIds[index]}:`, result.reason);
+		}
+	});
 }
