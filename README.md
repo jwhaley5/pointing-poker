@@ -68,7 +68,7 @@ npm run deploy
 
 Remove development resources:
 ```bash
-npm run "remove dev"
+npm run remove-dev
 ```
 
 ## How to Use

@@ -5,8 +5,8 @@
 	"scripts": {
 		"dev": "sst dev --stage dev",
 		"deploy": "sst deploy --stage production",
-		"remove dev": "sst remove --stage dev",
-		"remove prod": "sst remove --stage production",
+		"remove-dev": "sst remove --stage dev",
+		"remove-prod": "sst remove --stage production",
 		"typecheck": "tsc --noEmit"
 	},
 	"repository": {

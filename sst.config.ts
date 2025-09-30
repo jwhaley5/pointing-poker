@@ -1,11 +1,11 @@
 /// <reference path="./.sst/platform/config.d.ts" />
 
 export default $config({
-	app(input) {
+	app() {
 		return {
 			name: "pointing-poker",
-			removal: input?.stage === "production" ? "retain" : "remove",
-			protect: ["production"].includes(input?.stage),
+			removal: "remove",
+			protect: false,
 			home: "aws",
 		};
 	},
