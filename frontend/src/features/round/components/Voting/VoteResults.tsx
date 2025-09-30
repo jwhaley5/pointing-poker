@@ -7,11 +7,19 @@ interface VoteResultsProps {
 
 export function VoteResults({ snap }: VoteResultsProps) {
   const calculateAverage = () => {
-    const nums = Object.values(snap.votes)
-      .map((v) => Number(v))
-      .filter((n) => !Number.isNaN(n))
-    if (!nums.length) return '—'
-    const avg = nums.reduce((a, b) => a + b, 0) / nums.length
+    const activeMembers = snap.members
+      .filter((m) => m.present)
+      .map((m) => m.memberId)
+    const votes = Object.entries(snap.currentRoundVotes).filter(([memberId]) =>
+      activeMembers.includes(memberId),
+    )
+    if (votes.length === 0) return '—'
+    const votesNumbers = votes
+      .map(([, v]) => v)
+      .filter((v) => v != null)
+      .map((item) => Number(item))
+
+    const avg = votesNumbers.reduce((a, b) => a + b, 0) / votesNumbers.length
     return avg.toFixed(2)
   }
 

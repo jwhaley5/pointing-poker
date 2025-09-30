@@ -24,6 +24,7 @@
 		"@aws-sdk/client-apigatewaymanagementapi": "^3.896.0",
 		"@aws-sdk/client-dynamodb": "^3.896.0",
 		"@aws-sdk/util-dynamodb": "^3.896.0",
+		"@pointing-poker/shared-types": "file:./shared",
 		"@types/aws-lambda": "8.10.152",
 		"esbuild": "^0.25.10",
 		"sst": "^3.17.14",

@@ -21,8 +21,8 @@ export function VoteRow({ member, snap }: VoteRowProps) {
         className={`badge badge-lg flex items-center justify-center ${isCurrentUser ? 'badge-primary text-lg' : 'badge-neutral'}`}
       >
         {snap.revealed || isCurrentUser ? (
-          (snap.votes[member.memberId] ?? '—')
-        ) : snap.votes[member.memberId] != null ? (
+          (snap.currentRoundVotes[member.memberId] ?? '—')
+        ) : snap.currentRoundVotes[member.memberId] != null ? (
           <FaCheck />
         ) : (
           <FaDotCircle />

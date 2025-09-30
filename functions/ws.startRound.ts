@@ -1,5 +1,5 @@
 import { listRoomItems, pk, put, update, skRound } from "./lib/db";
-import { broadcastPersonalized } from "./lib/ws";
+import { broadcastPersonalized, buildRoomBroadcast } from "./lib/ws";
 
 export async function handler(event: any) {
 	const { roomId, title } = JSON.parse(event.body || "{}");
@@ -9,8 +9,20 @@ export async function handler(event: any) {
 	const room = items.find((i: any) => i.SK === "ROOM");
 	if (!room) return { statusCode: 403, body: "forbidden" };
 
-	const next = (room.roundsCount ?? room.currentRound ?? 1) + 1;
+	const currentRound = room.currentRound ?? 1;
+	const next = (room.roundsCount ?? currentRound) + 1;
 
+	// Mark the current round as completed
+	if (currentRound > 0) {
+		await update(
+			{ PK: pk(roomId), SK: skRound(currentRound) },
+			"SET #completed = :time",
+			{ "#completed": "completedAt" },
+			{ ":time": new Date().toISOString() }
+		);
+	}
+
+	// Update room to point to new current round
 	await update(
 		{ PK: pk(roomId), SK: "ROOM" },
 		"SET #cr = :n, #rc = :n, #rev = :f",
@@ -18,32 +30,23 @@ export async function handler(event: any) {
 		{ ":n": next, ":f": false }
 	);
 
+	// Create new round
 	await put({
 		PK: pk(roomId),
 		SK: skRound(next),
 		round: next,
 		title: title || `Round ${next}`,
 		revealed: false,
-		createdAt: Math.floor(Date.now() / 1000),
+		createdAt: new Date().toISOString(),
 	});
 
-	const members = items
-		.filter((i: any) => i.SK.startsWith("MEMBER#"))
-		.map((m: any) => ({ memberId: m.memberId, name: m.name, present: m.present }));
-	const votes = Object.fromEntries(members.map((m: any) => [m.memberId, null]));
+	// Refresh items to get the updated data
+	const updatedItems = await listRoomItems(roomId);
+	const connections = updatedItems.filter((i: any) => i.SK.startsWith("CONN#")).map((i: any) => i.connectionId);
 
-	const connections = items.filter((i: any) => i.SK.startsWith("CONN#")).map((i: any) => i.connectionId);
+	const roomBroadcast = buildRoomBroadcast(roomId, updatedItems, undefined, title || `Round ${next}`);
 
-	await broadcastPersonalized(connections, {
-		type: "room",
-		roomId,
-		title: room.title || "New Room",
-		currentRound: next,
-		roundTitle: title || `Round ${next}`,
-		revealed: false,
-		members,
-		votes,
-	});
+	await broadcastPersonalized(connections, roomBroadcast);
 
 	return { statusCode: 200 };
 }

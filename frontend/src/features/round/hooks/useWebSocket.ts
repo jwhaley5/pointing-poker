@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { Snapshot } from '../types'
+import type { Snapshot, ClientMessage, SyncMessage } from '../types'
 
 export function useWebSocket(roomId: string) {
   const [wsReady, setWsReady] = useState(false)
@@ -12,7 +12,8 @@ export function useWebSocket(roomId: string) {
 
     const onOpen = () => {
       setWsReady(true)
-      ws.send(JSON.stringify({ action: 'sync', roomId }))
+      const syncMessage: SyncMessage = { action: 'sync', roomId }
+      ws.send(JSON.stringify(syncMessage))
     }
 
     const onMessage = (e: MessageEvent) => {
@@ -47,7 +48,7 @@ export function useWebSocket(roomId: string) {
     }
   }, [roomId])
 
-  const send = (payload: any) => {
+  const send = (payload: ClientMessage) => {
     if (!socket || socket.readyState !== WebSocket.OPEN) return
     socket.send(JSON.stringify(payload))
   }

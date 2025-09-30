@@ -1,20 +1,18 @@
-export type Member = {
-  memberId: string
-  name: string
-  present: boolean
-}
-
-export type Snapshot = {
-  type: 'room'
-  roomId: string
-  title: string
-  currentRound: number
-  roundTitle: string
-  revealed: boolean
-  members: Array<Member>
-  votes: Record<string, string | null>
-  currentMemberId: string
-}
+// Re-export shared types
+export type { 
+  Member, 
+  Snapshot, 
+  RoundHistory, 
+  ClientMessage,
+  SyncMessage,
+  JoinMessage,
+  VoteMessage,
+  RevealMessage,
+  StartRoundMessage,
+  SetRoomTitleMessage,
+  SetRoundTitleMessage
+} from '@pointing-poker/shared-types'
+import type { Snapshot } from '@pointing-poker/shared-types'
 
 export interface WebSocketContextType {
   socket: WebSocket | null

@@ -1,9 +1,12 @@
 import { listRoomItems, pk, put, skVote } from "./lib/db";
-import { broadcastPersonalized } from "./lib/ws";
+import { broadcastPersonalized, buildRoomBroadcast } from "./lib/ws";
+import type { VoteMessage } from "@pointing-poker/shared-types";
 
 export async function handler(event: any) {
 	const { connectionId } = event.requestContext;
-	const { roomId, value } = JSON.parse(event.body || "{}");
+	const payload = JSON.parse(event.body || "{}") as VoteMessage;
+	const { roomId, value } = payload;
+	
 	if (!roomId) return { statusCode: 400, body: "roomId required" };
 
 	const items = await listRoomItems(roomId);
@@ -18,33 +21,13 @@ export async function handler(event: any) {
 		value: value ?? null,
 	});
 
-	const roundKey = `ROUND#${round.toString().padStart(4, "0")}`;
-	const roundItem = items.find((i: any) => i.SK === roundKey) || { title: `Round ${round}`, revealed: false };
-	const revealed = !!roundItem.revealed;
+	// Get updated items including the new vote
+	const refreshedItems = await listRoomItems(roomId);
+	const connections = refreshedItems.filter((i: any) => i.SK.startsWith("CONN#")).map((i: any) => i.connectionId);
 
-	const members = items
-		.filter((i: any) => i.SK.startsWith("MEMBER#"))
-		.map((m: any) => ({ memberId: m.memberId, name: m.name, present: m.present }));
+	const roomBroadcast = buildRoomBroadcast(roomId, refreshedItems);
 
-	const votePrefix = `VOTE#${round.toString().padStart(4, "0")}#`;
-	const refreshed = await listRoomItems(roomId); // get the newly written vote too
-	const voteItems = refreshed.filter((i: any) => i.SK.startsWith(votePrefix));
-
-	const votes: Record<string, string | null> = Object.fromEntries(members.map((m: any) => [m.memberId, null]));
-	for (const v of voteItems) votes[v.memberId] = v.value ?? null;
-
-	const connections = refreshed.filter((i: any) => i.SK.startsWith("CONN#")).map((i: any) => i.connectionId);
-
-	await broadcastPersonalized(connections, {
-		type: "room",
-		roomId,
-		title: room.title || "New Room",
-		currentRound: round,
-		roundTitle: roundItem.title,
-		revealed,
-		members,
-		votes,
-	});
+	await broadcastPersonalized(connections, roomBroadcast);
 
 	return { statusCode: 200 };
 }

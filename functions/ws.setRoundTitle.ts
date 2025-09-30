@@ -1,8 +1,11 @@
 import { listRoomItems, pk, update } from "./lib/db";
-import { broadcastPersonalized } from "./lib/ws";
+import { broadcastPersonalized, buildRoomBroadcast } from "./lib/ws";
+import type { SetRoundTitleMessage } from "@pointing-poker/shared-types";
 
 export async function handler(event: any) {
-	const { roomId, title } = JSON.parse(event.body || "{}");
+	const payload = JSON.parse(event.body || "{}") as SetRoundTitleMessage;
+	const { roomId, title } = payload;
+	
 	if (!roomId || !title) return { statusCode: 400, body: "roomId and title required" };
 
 	// Validate title length
@@ -26,29 +29,12 @@ export async function handler(event: any) {
 	);
 
 	// Get updated room data and broadcast to all members
-	const revealed = !!room.revealed;
+	const updatedItems = await listRoomItems(roomId);
+	const connections = updatedItems.filter((i: any) => i.SK.startsWith("CONN#")).map((i: any) => i.connectionId);
 
-	const members = items
-		.filter((i: any) => i.SK.startsWith("MEMBER#"))
-		.map((m: any) => ({ memberId: m.memberId, name: m.name, present: m.present }));
+	const roomBroadcast = buildRoomBroadcast(roomId, updatedItems, undefined, title.trim());
 
-	const votePrefix = `VOTE#${round.toString().padStart(4, "0")}#`;
-	const voteItems = items.filter((i: any) => i.SK.startsWith(votePrefix));
-	const votes: Record<string, string | null> = Object.fromEntries(members.map((m: any) => [m.memberId, null]));
-	for (const v of voteItems) votes[v.memberId] = revealed ? v.value ?? null : null;
-
-	const connections = items.filter((i: any) => i.SK.startsWith("CONN#")).map((i: any) => i.connectionId);
-
-	await broadcastPersonalized(connections, {
-		type: "room",
-		roomId,
-		title: room.title || "New Room",
-		currentRound: round,
-		roundTitle: title.trim(),
-		revealed,
-		members,
-		votes,
-	});
+	await broadcastPersonalized(connections, roomBroadcast);
 
 	return { statusCode: 200 };
 }

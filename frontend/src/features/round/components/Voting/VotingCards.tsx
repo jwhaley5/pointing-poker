@@ -1,5 +1,5 @@
 import { useWebSocketContext } from '../../context/WebSocketContext'
-import type { Snapshot } from '../../types'
+import type { Snapshot, VoteMessage } from '../../types'
 
 interface VotingCardsProps {
   roomId: string
@@ -31,20 +31,21 @@ export function VotingCards({ roomId, snap }: VotingCardsProps) {
       prev
         ? {
             ...prev,
-            votes: { ...prev.votes, [prev.currentMemberId]: value },
+            currentRoundVotes: { ...prev.currentRoundVotes, [prev.currentMemberId]: value },
           }
         : prev,
     )
 
     // Send to server
-    send({ action: 'vote', roomId, value })
+    const voteMessage: VoteMessage = { action: 'vote', roomId, value }
+    send(voteMessage)
   }
 
   return (
     <div className="card bg-base-200 p-4">
       <div className="flex flex-wrap gap-2">
         {CARDS.map((c) => {
-          const isSelected = snap.votes[snap.currentMemberId] === c
+          const isSelected = snap.currentRoundVotes[snap.currentMemberId] === c
           return (
             <button
               key={c}
@@ -56,7 +57,7 @@ export function VotingCards({ roomId, snap }: VotingCardsProps) {
           )
         })}
         <button
-          className={`btn btn-ghost ${snap.votes[snap.currentMemberId] === null ? 'btn-active' : ''}`}
+          className={`btn btn-ghost ${snap.currentRoundVotes[snap.currentMemberId] === null ? 'btn-active' : ''}`}
           onClick={() => cast(null)}
         >
           Clear

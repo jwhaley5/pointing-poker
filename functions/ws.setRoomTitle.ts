@@ -1,8 +1,11 @@
 import { listRoomItems, pk, update } from "./lib/db";
-import { broadcastPersonalized } from "./lib/ws";
+import { broadcastPersonalized, buildRoomBroadcast } from "./lib/ws";
+import type { SetRoomTitleMessage } from "@pointing-poker/shared-types";
 
 export async function handler(event: any) {
-	const { roomId, title } = JSON.parse(event.body || "{}");
+	const payload = JSON.parse(event.body || "{}") as SetRoomTitleMessage;
+	const { roomId, title } = payload;
+	
 	if (!roomId || !title) return { statusCode: 400, body: "roomId and title required" };
 
 	// Validate title length
@@ -23,32 +26,12 @@ export async function handler(event: any) {
 	);
 
 	// Get updated room data and broadcast to all members
-	const round = room.currentRound ?? 1;
-	const roundKey = `ROUND#${round.toString().padStart(4, "0")}`;
-	const roundItem = items.find((i: any) => i.SK === roundKey) || { title: `Round ${round}`, revealed: false };
-	const revealed = !!roundItem.revealed;
+	const updatedItems = await listRoomItems(roomId);
+	const connections = updatedItems.filter((i: any) => i.SK.startsWith("CONN#")).map((i: any) => i.connectionId);
 
-	const members = items
-		.filter((i: any) => i.SK.startsWith("MEMBER#"))
-		.map((m: any) => ({ memberId: m.memberId, name: m.name, present: m.present }));
+	const roomBroadcast = buildRoomBroadcast(roomId, updatedItems, title.trim());
 
-	const votePrefix = `VOTE#${round.toString().padStart(4, "0")}#`;
-	const voteItems = items.filter((i: any) => i.SK.startsWith(votePrefix));
-	const votes: Record<string, string | null> = Object.fromEntries(members.map((m: any) => [m.memberId, null]));
-	for (const v of voteItems) votes[v.memberId] = revealed ? v.value ?? null : null;
-
-	const connections = items.filter((i: any) => i.SK.startsWith("CONN#")).map((i: any) => i.connectionId);
-
-	await broadcastPersonalized(connections, {
-		type: "room",
-		roomId,
-		title: title.trim(),
-		currentRound: round,
-		roundTitle: roundItem.title,
-		revealed,
-		members,
-		votes,
-	});
+	await broadcastPersonalized(connections, roomBroadcast);
 
 	return { statusCode: 200 };
 }
