@@ -11,7 +11,9 @@ export function validateClientMessage(payload: any): payload is ClientMessage {
       return typeof payload.roomId === 'string';
     
     case 'join':
-      return typeof payload.roomId === 'string' && typeof payload.name === 'string';
+      return typeof payload.roomId === 'string' && 
+             typeof payload.name === 'string' &&
+             (payload.role === undefined || payload.role === 'member' || payload.role === 'observer');
     
     case 'vote':
       return typeof payload.roomId === 'string' && 

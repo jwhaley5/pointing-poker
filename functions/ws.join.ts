@@ -10,14 +10,21 @@ export async function handler(event: any) {
 		return { statusCode: 400, body: "Invalid join message" };
 	}
 	
-	const { roomId, name } = payload;
+	const { roomId, name, role = 'member' } = payload as any;
 
-	const memberId = connectionId;
 	const now = Math.floor(Date.now() / 1000);
 
-	const connectionRecord = { PK: pk(roomId), SK: `CONN#${connectionId}`, connectionId, memberId, ttl: now + 60 * 60 * 24 };
-	await put(connectionRecord);
-	await put({ PK: pk(roomId), SK: `MEMBER#${memberId}`, memberId, name, present: true, joinedAt: now });
+	if (role === 'observer') {
+		const observerId = connectionId;
+		const connectionRecord = { PK: pk(roomId), SK: `CONN#${connectionId}`, connectionId, observerId, ttl: now + 60 * 60 * 24 };
+		await put(connectionRecord);
+		await put({ PK: pk(roomId), SK: `OBSERVER#${observerId}`, observerId, name, present: true, joinedAt: now });
+	} else {
+		const memberId = connectionId;
+		const connectionRecord = { PK: pk(roomId), SK: `CONN#${connectionId}`, connectionId, memberId, ttl: now + 60 * 60 * 24 };
+		await put(connectionRecord);
+		await put({ PK: pk(roomId), SK: `MEMBER#${memberId}`, memberId, name, present: true, joinedAt: now });
+	}
 
 	// Build and broadcast snapshot
 	const items = await listRoomItems(roomId);

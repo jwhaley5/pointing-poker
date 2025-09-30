@@ -5,6 +5,7 @@ export interface JoinMessage {
   action: 'join'
   roomId: string
   name: string
+  role?: 'member' | 'observer'
 }
 
 export interface VoteMessage {

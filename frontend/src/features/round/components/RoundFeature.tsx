@@ -4,23 +4,23 @@ import { JoinScreen } from './JoinScreen'
 import { RoomInterface } from './RoomInterface'
 
 interface RoundFeatureProps {
-  roomId: string
+	roomId: string
 }
 
 export function RoundFeature({ roomId }: RoundFeatureProps) {
-  const [hasJoined, setHasJoined] = useState(false)
+	const [hasJoined, setHasJoined] = useState(false)
 
-  const handleJoinSuccess = () => {
-    setHasJoined(true)
-  }
+	const handleJoinSuccess = () => {
+		setHasJoined(true)
+	}
 
-  return (
-    <WebSocketProvider roomId={roomId}>
-      {!hasJoined ? (
-        <JoinScreen roomId={roomId} onJoinSuccess={handleJoinSuccess} />
-      ) : (
-        <RoomInterface roomId={roomId} />
-      )}
-    </WebSocketProvider>
-  )
+	return (
+		<WebSocketProvider roomId={roomId}>
+			{!hasJoined ? (
+				<JoinScreen roomId={roomId} onJoinSuccess={handleJoinSuccess} />
+			) : (
+				<RoomInterface roomId={roomId} />
+			)}
+		</WebSocketProvider>
+	)
 }

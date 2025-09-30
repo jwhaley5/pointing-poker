@@ -5,6 +5,13 @@ export interface Member {
   present: boolean
 }
 
+// Observer data structure
+export interface Observer {
+  observerId: string
+  name: string
+  present: boolean
+}
+
 // Historical round data
 export interface RoundHistory {
   roundNumber: number
@@ -23,11 +30,13 @@ export interface RoomBroadcastBase {
   roundTitle: string
   revealed: boolean
   members: Member[]
+  observers: Observer[]
   currentRoundVotes: Record<string, string | null>
   roundHistory: RoundHistory[]
 }
 
 // Main room broadcast message sent via WebSocket (includes personalized data)
 export interface RoomBroadcast extends RoomBroadcastBase {
-  currentMemberId: string
+  currentMemberId?: string
+  currentObserverId?: string
 }

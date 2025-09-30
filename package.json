@@ -3,9 +3,10 @@
 	"version": "1.0.0",
 	"main": "index.js",
 	"scripts": {
-		"dev": "sst dev",
-		"deploy": "sst deploy",
-		"remove": "sst remove",
+		"dev": "sst dev --stage dev",
+		"deploy": "sst deploy --stage production",
+		"remove dev": "sst remove --stage dev",
+		"remove prod": "sst remove --stage production",
 		"typecheck": "tsc --noEmit"
 	},
 	"repository": {

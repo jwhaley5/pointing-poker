@@ -6,32 +6,34 @@ import { VoteResults } from './Voting/VoteResults'
 import { MembersSidebar } from './Members/MembersSidebar'
 
 interface RoomInterfaceProps {
-  roomId: string
+	roomId: string
 }
 
 export function RoomInterface({ roomId }: RoomInterfaceProps) {
-  const { snap } = useWebSocketContext()
+	const { snap } = useWebSocketContext()
 
-  if (!snap) {
-    return (
-      <div className="alert">
-        <span>Waiting for room state…</span>
-      </div>
-    )
-  }
+	if (!snap) {
+		return (
+			<div className="alert">
+				<span>Waiting for room state…</span>
+			</div>
+		)
+	}
 
-  return (
-    <>
-      <RoomHeader roomId={roomId} />
+	const isMember = !!snap.currentMemberId
 
-      <div className="grid md:grid-cols-3 gap-4">
-        <div className="md:col-span-2 space-y-4">
-          <RoundControls roomId={roomId} snap={snap} />
-          <VotingCards roomId={roomId} snap={snap} />
-          <VoteResults snap={snap} />
-        </div>
-        <MembersSidebar snap={snap} />
-      </div>
-    </>
-  )
+	return (
+		<>
+			<RoomHeader roomId={roomId} />
+
+			<div className="grid md:grid-cols-3 gap-4">
+				<div className="md:col-span-2 space-y-4">
+					<RoundControls roomId={roomId} snap={snap} />
+					{isMember && <VotingCards roomId={roomId} snap={snap} />}
+					<VoteResults />
+				</div>
+				<MembersSidebar snap={snap} />
+			</div>
+		</>
+	)
 }

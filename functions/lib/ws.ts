@@ -27,9 +27,13 @@ export async function broadcastPersonalized(connections: string[], basePayload: 
 	const client = wsClient();
 	const results = await Promise.allSettled(
 		connections.map((connectionId) => {
+			const isMember = basePayload.members.some((m: any) => m.memberId === connectionId);
+			const isObserver = basePayload.observers.some((o: any) => o.observerId === connectionId);
+			
 			const personalizedPayload = {
 				...basePayload,
-				currentMemberId: connectionId
+				...(isMember && { currentMemberId: connectionId }),
+				...(isObserver && { currentObserverId: connectionId })
 			};
 			const Data = Buffer.from(JSON.stringify(personalizedPayload));
 			return client.send(new PostToConnectionCommand({ 
@@ -64,6 +68,10 @@ export function buildRoomBroadcast(
 	const members = items
 		.filter((i: any) => i.SK.startsWith("MEMBER#"))
 		.map((m: any) => ({ memberId: m.memberId, name: m.name, present: m.present }));
+
+	const observers = items
+		.filter((i: any) => i.SK.startsWith("OBSERVER#"))
+		.map((o: any) => ({ observerId: o.observerId, name: o.name, present: o.present }));
 
 	const votePrefix = `VOTE#${round.toString().padStart(4, "0")}#`;
 	const voteItems = items.filter((i: any) => i.SK.startsWith(votePrefix));
@@ -105,6 +113,7 @@ export function buildRoomBroadcast(
 		roundTitle: customRoundTitle ?? roundItem.title ?? `Round ${round}`,
 		revealed,
 		members,
+		observers,
 		currentRoundVotes,
 		roundHistory,
 	};
