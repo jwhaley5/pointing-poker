@@ -1,5 +1,5 @@
 import { listRoomItems, pk, put, skVote } from "./lib/db";
-import { broadcast } from "./lib/ws";
+import { broadcastPersonalized } from "./lib/ws";
 
 export async function handler(event: any) {
 	const { connectionId } = event.requestContext;
@@ -35,9 +35,10 @@ export async function handler(event: any) {
 
 	const connections = refreshed.filter((i: any) => i.SK.startsWith("CONN#")).map((i: any) => i.connectionId);
 
-	await broadcast(connections, {
+	await broadcastPersonalized(connections, {
 		type: "room",
 		roomId,
+		title: room.title || "New Room",
 		currentRound: round,
 		roundTitle: roundItem.title,
 		revealed,

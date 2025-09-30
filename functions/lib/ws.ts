@@ -21,3 +21,27 @@ export async function broadcast(connectionIds: string[], payload: any) {
 		}
 	});
 }
+
+export async function broadcastPersonalized(connections: string[], basePayload: any) {
+	const client = wsClient();
+	const results = await Promise.allSettled(
+		connections.map((connectionId) => {
+			const personalizedPayload = {
+				...basePayload,
+				currentMemberId: connectionId
+			};
+			const Data = Buffer.from(JSON.stringify(personalizedPayload));
+			return client.send(new PostToConnectionCommand({ 
+				ConnectionId: connectionId, 
+				Data 
+			}));
+		})
+	);
+
+	// Log any failures
+	results.forEach((result, index) => {
+		if (result.status === 'rejected') {
+			console.error(`Failed to send message to connection ${connections[index]}:`, result.reason);
+		}
+	});
+}

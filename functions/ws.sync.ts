@@ -25,11 +25,13 @@ export async function handler(event: any) {
 	await broadcast([connectionId], {
 		type: "room",
 		roomId,
+		title: room.title || "New Room",
 		currentRound: round,
 		roundTitle: roundItem.title,
 		revealed,
 		members,
 		votes,
+		currentMemberId: connectionId,
 	});
 
 	return { statusCode: 200 };

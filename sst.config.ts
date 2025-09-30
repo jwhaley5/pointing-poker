@@ -40,6 +40,8 @@ export default $config({
 		ws.route("vote", { ...wsCommon, handler: "functions/ws.vote.handler" });
 		ws.route("reveal", { ...wsCommon, handler: "functions/ws.reveal.handler" });
 		ws.route("startRound", { ...wsCommon, handler: "functions/ws.startRound.handler" });
+		ws.route("setRoomTitle", { ...wsCommon, handler: "functions/ws.setRoomTitle.handler" });
+		ws.route("setRoundTitle", { ...wsCommon, handler: "functions/ws.setRoundTitle.handler" });
 		ws.route("sync", { ...wsCommon, handler: "functions/ws.sync.handler" });
 
 		const api = new sst.aws.ApiGatewayV2("johnwhaley-poker-httpApi");

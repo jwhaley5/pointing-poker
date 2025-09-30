@@ -11,6 +11,7 @@ export async function handler() {
 		SK: "ROOM",
 		schemaVersion: 2,
 		roomId,
+		title: "New Room",
 		currentRound: 1,
 		roundsCount: 1,
 		createdAt: now,
