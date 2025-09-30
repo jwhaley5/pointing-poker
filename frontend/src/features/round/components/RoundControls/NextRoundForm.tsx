@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useWebSocketContext } from '../../context/WebSocketContext'
 
 interface NextRoundFormProps {
@@ -6,28 +5,23 @@ interface NextRoundFormProps {
 }
 
 export function NextRoundForm({ roomId }: NextRoundFormProps) {
-  const { send } = useWebSocketContext()
-  const [roundTitle, setRoundTitle] = useState('')
+  const { send, snap } = useWebSocketContext()
 
   const handleStartRound = () => {
     send({
       action: 'startRound',
       roomId,
-      title: roundTitle.trim() || undefined,
     })
-    setRoundTitle('')
   }
 
   return (
     <div className="join">
-      <input
-        className="input input-bordered join-item"
-        placeholder="Next round title"
-        value={roundTitle}
-        onChange={(e) => setRoundTitle(e.target.value)}
-      />
-      <button className="btn btn-warning join-item" onClick={handleStartRound}>
-        Start next round
+      <button
+        className="btn btn-warning join-item"
+        onClick={handleStartRound}
+        disabled={snap?.revealed === false}
+      >
+        Clear Votes
       </button>
     </div>
   )

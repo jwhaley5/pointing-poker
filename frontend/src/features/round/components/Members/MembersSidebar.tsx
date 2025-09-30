@@ -5,7 +5,6 @@ interface MembersSidebarProps {
 }
 
 export function MembersSidebar({ snap }: MembersSidebarProps) {
-  console.log(snap)
   return (
     <aside className="space-y-4">
       <div className="card bg-base-200 p-4">

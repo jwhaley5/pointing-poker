@@ -11,14 +11,14 @@ export function VoteRow({ member, snap }: VoteRowProps) {
 
   return (
     <li
-      className={`py-2 flex items-center justify-between ${isCurrentUser ? 'bg-primary/10 px-2 rounded' : ''}`}
+      className={`p-2 flex items-center justify-between ${isCurrentUser ? 'bg-primary/10' : ''}`}
     >
       <span className={isCurrentUser ? 'font-bold text-primary' : ''}>
         {member.name}
         {isCurrentUser ? ' (You)' : ''}
       </span>
       <span
-        className={`badge badge-lg flex items-center justify-center ${isCurrentUser ? 'badge-primary' : 'badge-ghost'}`}
+        className={`badge badge-lg flex items-center justify-center ${isCurrentUser ? 'badge-primary text-lg' : 'badge-neutral'}`}
       >
         {snap.revealed || isCurrentUser ? (
           (snap.votes[member.memberId] ?? '—')

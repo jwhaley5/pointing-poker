@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useWebSocketContext } from '../../context/WebSocketContext'
-import { EditableRoomTitle } from './EditableRoomTitle'
+import { RoomTitle } from './RoomTitle'
 import { ConnectionStatus } from './ConnectionStatus'
 
 interface RoomHeaderProps {
@@ -15,7 +15,7 @@ export function RoomHeader({ roomId }: RoomHeaderProps) {
     <div className="flex items-center justify-between gap-4">
       <div>
         <div className="flex items-center gap-2">
-          <EditableRoomTitle roomId={roomId} title={snap?.title} />
+          <RoomTitle roomId={roomId} title={snap?.title} />
         </div>
         <ConnectionStatus />
       </div>
