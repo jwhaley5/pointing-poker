@@ -1,10 +1,9 @@
-
-import { useTheme } from "./ThemeContext";
-import type { Theme } from "./types";
-import { ThemeArr } from "./types";
+import { useTheme } from './ThemeContext'
+import type { Theme } from './types'
+import { ThemeArr } from './types'
 
 export const ThemeSwitcher = () => {
-	const { setTheme } = useTheme();
+	const { setTheme } = useTheme()
 	return (
 		<div title="Change Theme" className="dropdown dropdown-end block">
 			<div
@@ -56,5 +55,5 @@ export const ThemeSwitcher = () => {
 				</ul>
 			</div>
 		</div>
-	);
-};
+	)
+}
