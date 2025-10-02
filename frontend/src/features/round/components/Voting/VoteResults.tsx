@@ -1,37 +1,6 @@
 import { VoteRow } from './VoteRow'
-import type { Snapshot } from '../../types'
 import { useWebSocketContext } from '../../context/WebSocketContext'
-
-const emojiScore = (char: string) => {
-	if (!char) return null;
-
-	// if it's a number-like string, return it
-	if (!isNaN(Number(char))) return Number(char);
-
-	// otherwise convert to code point
-	// e.g. "☕".codePointAt(0) → 9749
-	return char.codePointAt(0);
-};
-
-
-export const calculateAverage = (snap: Snapshot) => {
-	const activeMembers = snap.members
-		.filter((m) => m.present)
-		.map((m) => m.memberId)
-	const votes = Object.entries(snap.currentRoundVotes).filter(([memberId]) =>
-		activeMembers.includes(memberId),
-	)
-	if (votes.length === 0) return '—'
-
-	const votesNumbers = votes
-		.map(([, v]) => v)
-		.filter((v) => v != null)
-		.map((item) => emojiScore(item))
-		.filter((item) => item != null)
-
-	const avg = votesNumbers.reduce((a, b) => a + b, 0) / votesNumbers.length
-	return avg.toFixed(2)
-}
+import { calculateAverage, closestCard } from '../../utils';
 
 export function VoteResults() {
 
@@ -55,8 +24,8 @@ export function VoteResults() {
 			</ul>
 
 			{showVotes && (
-				<div className="mt-3 text-sm opacity-80">
-					Average (numbers only): {calculateAverage(snap)}
+				<div className="mt-1 text-sm flex gap-1 flex-col">
+					<p className="text-center flex items-center gap-2">Average: <span className="text-lg text-primary font-bold">{calculateAverage(snap).toFixed(2)} ({closestCard(calculateAverage(snap))})</span></p>
 				</div>
 			)}
 

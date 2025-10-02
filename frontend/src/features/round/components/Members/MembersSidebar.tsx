@@ -1,13 +1,8 @@
 import type { Snapshot } from '../../types'
+import { calculateAverageFromVotes, closestCard } from '../../utils'
 
 interface MembersSidebarProps {
 	snap: Snapshot
-}
-
-const calculateAverage = (votes: Record<string, string | null>) => {
-	const values = Object.entries(votes).map(([, v]) => v).filter((v) => v != null).map((item) => Number(item));
-	const average = values.reduce((a, b) => a + b, 0) / values.length;
-	return average.toFixed(0);
 }
 
 export function MembersSidebar({ snap }: MembersSidebarProps) {
@@ -67,15 +62,17 @@ export function MembersSidebar({ snap }: MembersSidebarProps) {
 								key={round.roundNumber}
 								className="text-sm p-2 bg-base-300 rounded hover:bg-base-100"
 							>
-								<div className="text-xs opacity-70 truncate">{round.title}</div>
+								<div className="truncate">{round.title}</div>
 								{round.completedAt && (
-									<div className="text-xs opacity-50">
-										{new Date(round.completedAt).toLocaleDateString()}
+									<div className="text-base-content/50">
+										Finished: {new Date(round.completedAt).toLocaleString("en-US", {
+											dateStyle: "short",
+											timeStyle: "short",
+										})}
 									</div>
 								)}
-								<div className="flex items-center gap-1">
-									<p>Average Points:</p>
-									<p className="text-secondary">{calculateAverage(round.votes)}</p>
+								<div className="flex text-base-content/50 items-center text-center gap-1">
+									<p>Average: <span className="text-primary font-bold">{calculateAverageFromVotes(round.votes)?.toFixed(2)} ({closestCard(calculateAverageFromVotes(round.votes) ?? 0)})</span></p>
 								</div>
 							</li>
 						))}
