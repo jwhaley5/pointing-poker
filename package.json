@@ -4,9 +4,9 @@
 	"main": "index.js",
 	"scripts": {
 		"dev": "sst dev --stage dev",
-		"deploy": "sst deploy --stage production",
+		"deploy": "sst deploy --stage innovation",
 		"remove-dev": "sst remove --stage dev",
-		"remove-prod": "sst remove --stage production",
+		"remove-innovation": "sst remove --stage innovation",
 		"typecheck": "tsc --noEmit"
 	},
 	"repository": {
