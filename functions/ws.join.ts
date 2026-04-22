@@ -1,4 +1,4 @@
-import { listRoomItems, pk, put } from "./lib/db";
+import { get, listRoomItems, pk, put, update } from "./lib/db";
 import { broadcastPersonalized, buildRoomBroadcast } from "./lib/ws";
 import { parseAndValidate } from "./lib/validation";
 
@@ -11,20 +11,33 @@ export async function handler(event: any) {
 	}
 	
 	const { roomId, name, role = 'member' } = payload as any;
+	const room = await get({ PK: pk(roomId), SK: "ROOM" });
+
+	if (!room) {
+		return { statusCode: 404, body: "Room not found" };
+	}
 
 	const now = Math.floor(Date.now() / 1000);
+	const participantId = connectionId;
 
 	if (role === 'observer') {
-		const observerId = connectionId;
+		const observerId = participantId;
 		const connectionRecord = { PK: pk(roomId), SK: `CONN#${connectionId}`, connectionId, observerId, ttl: now + 60 * 60 * 24 };
 		await put(connectionRecord);
 		await put({ PK: pk(roomId), SK: `OBSERVER#${observerId}`, observerId, name, present: true, joinedAt: now });
 	} else {
-		const memberId = connectionId;
+		const memberId = participantId;
 		const connectionRecord = { PK: pk(roomId), SK: `CONN#${connectionId}`, connectionId, memberId, ttl: now + 60 * 60 * 24 };
 		await put(connectionRecord);
 		await put({ PK: pk(roomId), SK: `MEMBER#${memberId}`, memberId, name, present: true, joinedAt: now });
 	}
+
+	await update(
+		{ PK: `CONN#${connectionId}`, SK: "META" },
+		"SET roomId = :roomId, #role = :role, participantId = :participantId, #ttl = :ttl",
+		{ "#role": "role", "#ttl": "ttl" },
+		{ ":roomId": roomId, ":role": role, ":participantId": participantId, ":ttl": now + 60 * 60 * 24 }
+	);
 
 	// Build and broadcast snapshot
 	const items = await listRoomItems(roomId);

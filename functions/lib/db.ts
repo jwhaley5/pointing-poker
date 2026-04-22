@@ -1,12 +1,9 @@
 
-import { DynamoDBClient, QueryCommand, PutItemCommand, UpdateItemCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, GetItemCommand, QueryCommand, PutItemCommand, UpdateItemCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
-import { Resource } from "sst";
 
 const ddb = new DynamoDBClient({});
-
-// Because your construct name contains dashes, use bracket notation:
-export const TABLE = Resource["johnWhaley-poker-pokerTable"].name as string;
+export const TABLE = process.env.TABLE_NAME ?? "";
 
 export const pk = (roomId: string) => `ROOM#${roomId}`;
 const roundStr = (n: number) => n.toString().padStart(4, "0");
@@ -20,6 +17,15 @@ export async function listRoomItems(roomId: string) {
 		ExpressionAttributeValues: marshall({ ":pk": pk(roomId) }),
 	}));
 	return (out.Items || []).map((i) => unmarshall(i));
+}
+
+export async function get(keys: any) {
+	const out = await ddb.send(new GetItemCommand({
+		TableName: TABLE,
+		Key: marshall(keys),
+	}));
+
+	return out.Item ? unmarshall(out.Item) : null;
 }
 
 export async function put(item: any) {

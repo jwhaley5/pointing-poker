@@ -1,9 +1,10 @@
 import { useTheme } from './ThemeContext'
 import type { Theme } from './types'
 import { ThemeArr } from './types'
+import { FiCheck } from 'react-icons/fi'
 
 export const ThemeSwitcher = () => {
-	const { setTheme } = useTheme()
+	const { theme: activeTheme, setTheme } = useTheme()
 	return (
 		<div title="Change Theme" className="dropdown dropdown-end block">
 			<div
@@ -49,6 +50,10 @@ export const ThemeSwitcher = () => {
 									<div className="bg-accent size-1 rounded-full"></div>
 								</div>
 								<div className="w-32 truncate">{theme}</div>
+								<FiCheck
+									aria-hidden="true"
+									className={activeTheme === theme ? 'ml-auto shrink-0 opacity-100' : 'ml-auto shrink-0 opacity-0'}
+								/>
 							</button>
 						</li>
 					))}
