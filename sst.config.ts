@@ -1,74 +1,114 @@
 /// <reference path="./.sst/platform/config.d.ts" />
 
+const AWS_REGION = "us-east-1";
+const PRODUCTION_DOMAIN = "pointing.athlorium.com";
+const PRODUCTION_API_DOMAIN = "api.pointing.athlorium.com";
+const PRODUCTION_WS_DOMAIN = "ws.pointing.athlorium.com";
+
 export default $config({
-	app() {
-		return {
-			name: "pointing-poker",
-			removal: "remove",
-			protect: false,
-			home: "aws",
-		};
-	},
-	async run() {
-		/**
-		 * DynamoDB Table for storing poker game data.
-		 */
-		const table = new sst.aws.Dynamo("johnWhaley-poker-pokerTable", {
-			fields: {
-				PK: "string",
-				SK: "string",
-			},
-			primaryIndex: { hashKey: "PK", rangeKey: "SK" },
-			ttl: "ttl"
-		});
+    app(input) {
+        const isProduction = input.stage === "production";
 
-		const ws = new sst.aws.ApiGatewayWebSocket("johnwhaley-poker-wsApi")
+        return {
+            name: "pointing-poker",
+            removal: isProduction ? "retain" : "remove",
+            protect: isProduction,
+            home: "aws",
+            providers: {
+                aws: {
+                    region: AWS_REGION,
+                },
+            },
+        };
+    },
+    async run() {
+        const isProduction = $app.stage === "production";
 
-		const wsCommon: sst.aws.FunctionArgs = {
-			handler: "functions/ws.default.handler",
-			link: [table, ws],
-			environment: {
-				WS_MANAGEMENT_ENDPOINT: ws.managementEndpoint
-			},
-		};
+        /**
+         * DynamoDB Table for storing poker game data.
+         */
+        const table = new sst.aws.Dynamo("pointing-poker-table", {
+            fields: {
+                PK: "string",
+                SK: "string",
+            },
+            primaryIndex: { hashKey: "PK", rangeKey: "SK" },
+            ttl: "ttl"
+        });
 
-		ws.route("$connect", { ...wsCommon, handler: "functions/ws.connect.handler" });
-		ws.route("$disconnect", { ...wsCommon, handler: "functions/ws.disconnect.handler" });
-		ws.route("$default", wsCommon);
+        const ws = new sst.aws.ApiGatewayWebSocket("pointing-poker-ws-api", {
+            domain: isProduction
+                ? {
+                    name: PRODUCTION_WS_DOMAIN,
+                    dns: sst.aws.dns(),
+                }
+                : undefined,
+        })
 
-		ws.route("join", { ...wsCommon, handler: "functions/ws.join.handler" });
-		ws.route("vote", { ...wsCommon, handler: "functions/ws.vote.handler" });
-		ws.route("reveal", { ...wsCommon, handler: "functions/ws.reveal.handler" });
-		ws.route("startRound", { ...wsCommon, handler: "functions/ws.startRound.handler" });
-		ws.route("setRoomTitle", { ...wsCommon, handler: "functions/ws.setRoomTitle.handler" });
-		ws.route("setRoundTitle", { ...wsCommon, handler: "functions/ws.setRoundTitle.handler" });
-		ws.route("sync", { ...wsCommon, handler: "functions/ws.sync.handler" });
+        const wsCommon: sst.aws.FunctionArgs = {
+            handler: "functions/ws.default.handler",
+            link: [table, ws],
+            environment: {
+                TABLE_NAME: table.name,
+                WS_MANAGEMENT_ENDPOINT: ws.managementEndpoint
+            },
+        };
 
-		const api = new sst.aws.ApiGatewayV2("johnwhaley-poker-httpApi");
+        ws.route("$connect", { ...wsCommon, handler: "functions/ws.connect.handler" });
+        ws.route("$disconnect", { ...wsCommon, handler: "functions/ws.disconnect.handler" });
+        ws.route("$default", wsCommon);
 
-		api.route("POST /rooms", {
-			handler: "functions/http.createRoom.handler",
-			link: [table],
-			environment: {
-				WS_URL: ws.url,
-			}
-		})
+        ws.route("join", { ...wsCommon, handler: "functions/ws.join.handler" });
+        ws.route("vote", { ...wsCommon, handler: "functions/ws.vote.handler" });
+        ws.route("reveal", { ...wsCommon, handler: "functions/ws.reveal.handler" });
+        ws.route("startRound", { ...wsCommon, handler: "functions/ws.startRound.handler" });
+        ws.route("setRoomTitle", { ...wsCommon, handler: "functions/ws.setRoomTitle.handler" });
+        ws.route("setRoundTitle", { ...wsCommon, handler: "functions/ws.setRoundTitle.handler" });
+        ws.route("sync", { ...wsCommon, handler: "functions/ws.sync.handler" });
 
-		const site = new sst.aws.StaticSite("johnwhaley-poker-frontend", {
-			path: "frontend",
-			build: { command: "npm run build", output: "dist" },
-			environment: {
-				VITE_WS_URL: ws.url,
-				VITE_API_URL: api.url
-			}
-		})
+        const api = new sst.aws.ApiGatewayV2("pointing-poker-http-api", {
+            domain: isProduction
+                ? {
+                    name: PRODUCTION_API_DOMAIN,
+                    dns: sst.aws.dns(),
+                }
+                : undefined,
+        });
 
-		return {
-			TableName: table.name,
-			WebSocketUrl: ws.url,
-			WebSocketMgmtEndpoint: ws.managementEndpoint,
-			ApiUrl: api.url,
-			SiteUrl: site.url
-		}
-	}
+        api.route("POST /rooms", {
+            handler: "functions/http.createRoom.handler",
+            link: [table],
+            environment: {
+                TABLE_NAME: table.name,
+                WS_URL: ws.url,
+            }
+        })
+
+        const site = new sst.aws.StaticSite("pointing-poker-frontend", {
+            path: "frontend",
+            build: { command: "npm run build", output: "dist" },
+            domain: isProduction
+                ? {
+                    name: PRODUCTION_DOMAIN,
+                    dns: sst.aws.dns(),
+                }
+                : undefined,
+            environment: {
+                VITE_WS_URL: ws.url,
+                VITE_API_URL: api.url
+            }
+        })
+
+        return {
+            Stage: $app.stage,
+            TableName: table.name,
+            WebSocketUrl: ws.url,
+            WebSocketMgmtEndpoint: ws.managementEndpoint,
+            ApiUrl: api.url,
+            SiteUrl: site.url,
+            CustomDomain: isProduction ? PRODUCTION_DOMAIN : "not-configured",
+            ApiDomain: isProduction ? PRODUCTION_API_DOMAIN : "not-configured",
+            WebSocketDomain: isProduction ? PRODUCTION_WS_DOMAIN : "not-configured"
+        }
+    }
 });

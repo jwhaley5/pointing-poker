@@ -4,9 +4,12 @@
 	"main": "index.js",
 	"scripts": {
 		"dev": "sst dev --stage dev",
-		"deploy": "sst deploy --stage innovation",
+		"deploy": "sst deploy --stage production",
+		"deploy:qa": "sst deploy --stage qa",
+		"deploy:production": "sst deploy --stage production",
 		"remove-dev": "sst remove --stage dev",
-		"remove-innovation": "sst remove --stage innovation",
+		"remove-production": "sst remove --stage production",
+		"remove-qa": "sst remove --stage qa",
 		"typecheck": "tsc --noEmit"
 	},
 	"repository": {
@@ -28,10 +31,8 @@
 		"@pointing-poker/shared-types": "file:./shared",
 		"@types/aws-lambda": "8.10.152",
 		"esbuild": "^0.25.10",
-		"sst": "^3.17.14",
+		"sst": "^3.19.3",
+		"sst-darwin-arm64": "^3.17.14",
 		"typescript": "^5.9.2"
-	},
-	"dependencies": {
-		"sst": "3.17.14"
 	}
 }
