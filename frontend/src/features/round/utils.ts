@@ -9,8 +9,8 @@ import { CARD_NUMBERS } from './CARD_NUMBERS';
  */
 export const calculateAverage = (snap: Snapshot): number => {
 	const activeMembers = snap.members
-		.filter((m) => m.present)
-		.map((m) => m.memberId);
+		.filter((m: Snapshot['members'][number]) => m.present)
+		.map((m: Snapshot['members'][number]) => m.memberId);
 
 	const votes = Object.entries(snap.currentRoundVotes).filter(([memberId]) =>
 		activeMembers.includes(memberId),

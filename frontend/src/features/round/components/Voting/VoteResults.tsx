@@ -1,5 +1,6 @@
 import { VoteRow } from './VoteRow'
 import { useWebSocketContext } from '../../context/WebSocketContext'
+import type { Member, Observer } from '../../types'
 import { calculateAverage, closestCard } from '../../utils';
 
 export function VoteResults() {
@@ -17,8 +18,8 @@ export function VoteResults() {
 			</h3>
 			<ul className="divide-y">
 				{snap?.members
-					.filter((member) => member.present)
-					.map((member) => (
+					.filter((member: Member) => member.present)
+					.map((member: Member) => (
 						<VoteRow key={member.memberId} member={member} snap={snap} showVote={showVotes} />
 					))}
 			</ul>
@@ -34,8 +35,8 @@ export function VoteResults() {
 					<h4 className="font-medium text-sm mb-2 opacity-70">Observers</h4>
 					<ul className="text-sm opacity-70">
 						{snap.observers
-							.filter((observer) => observer.present)
-							.map((observer) => (
+							.filter((observer: Observer) => observer.present)
+							.map((observer: Observer) => (
 								<li key={observer.observerId} className="py-1">
 									{observer.name}
 									{snap.currentObserverId === observer.observerId && (

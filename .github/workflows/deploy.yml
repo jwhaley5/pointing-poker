@@ -55,6 +55,10 @@ jobs:
         working-directory: shared
         run: npm ci
 
+      - name: Build shared package
+        working-directory: shared
+        run: npm run build
+
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
