@@ -1,6 +1,7 @@
 // Re-export shared types
 export type {
 	Member,
+	Observer,
 	Snapshot,
 	RoundHistory,
 	ClientMessage,

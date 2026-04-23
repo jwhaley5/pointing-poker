@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useWebSocketContext } from '../context/WebSocketContext'
+import type { Member, Observer } from '../types'
 
 interface JoinScreenProps {
 	roomId: string
@@ -24,7 +25,7 @@ export function JoinScreen({ roomId, onJoinSuccess }: JoinScreenProps) {
 	useEffect(() => {
 		if (snap?.currentMemberId) {
 			const currentMember = snap.members.find(
-				(m) => m.memberId === snap.currentMemberId,
+				(m: Member) => m.memberId === snap.currentMemberId,
 			)
 			if (currentMember && currentMember.present) {
 				setIsJoining(false)
@@ -32,7 +33,7 @@ export function JoinScreen({ roomId, onJoinSuccess }: JoinScreenProps) {
 			}
 		} else if (snap?.currentObserverId) {
 			const currentObserver = snap.observers.find(
-				(o) => o.observerId === snap.currentObserverId,
+				(o: Observer) => o.observerId === snap.currentObserverId,
 			)
 			if (currentObserver && currentObserver.present) {
 				setIsJoining(false)

@@ -1,4 +1,4 @@
-import type { Snapshot } from '../../types'
+import type { Observer, RoundHistory, Snapshot, Member } from '../../types'
 import { calculateAverageFromVotes, closestCard } from '../../utils'
 
 interface MembersSidebarProps {
@@ -12,8 +12,8 @@ export function MembersSidebar({ snap }: MembersSidebarProps) {
 				<h3 className="font-semibold mb-2">Members</h3>
 				<ul className="list-disc ml-5">
 					{snap.members
-						.filter((member) => member.present)
-						.map((member) => (
+						.filter((member: Member) => member.present)
+						.map((member: Member) => (
 							<li
 								key={member.memberId}
 								className={
@@ -33,8 +33,8 @@ export function MembersSidebar({ snap }: MembersSidebarProps) {
 						<h4 className="font-medium mt-4 mb-2 text-sm">Observers</h4>
 						<ul className="list-disc ml-5 text-sm opacity-70">
 							{snap.observers
-								.filter((observer) => observer.present)
-								.map((observer) => (
+								.filter((observer: Observer) => observer.present)
+								.map((observer: Observer) => (
 									<li
 										key={observer.observerId}
 										className={
@@ -57,7 +57,7 @@ export function MembersSidebar({ snap }: MembersSidebarProps) {
 					<p className="text-sm opacity-70">No completed rounds yet</p>
 				) : (
 					<ul className="space-y-1">
-						{snap.roundHistory.map((round) => (
+						{snap.roundHistory.map((round: RoundHistory) => (
 							<li
 								key={round.roundNumber}
 								className="text-sm p-2 bg-base-300 rounded hover:bg-base-100"
@@ -82,4 +82,3 @@ export function MembersSidebar({ snap }: MembersSidebarProps) {
 		</aside>
 	)
 }
-

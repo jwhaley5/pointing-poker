@@ -3,16 +3,27 @@
 		"target": "ES2020",
 		"module": "ES2022",
 		"moduleResolution": "Bundler",
+		"baseUrl": ".",
+		"paths": {
+			"@pointing-poker/shared-types": [
+				"shared/src/index.ts"
+			]
+		},
 		"strict": true,
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"skipLibCheck": true,
 		"types": [
-			"aws-lambda"
+			"aws-lambda",
+			"node"
 		]
 	},
+	"include": [
+		"functions/**/*.ts"
+	],
 	"exclude": [
 		"frontend/**",
+		"shared/**",
 		"node_modules"
 	]
 }
