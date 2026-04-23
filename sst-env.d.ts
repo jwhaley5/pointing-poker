@@ -6,6 +6,23 @@
 
 declare module "sst" {
   export interface Resource {
+    "pointing-poker-frontend": {
+      "type": "sst.aws.StaticSite"
+      "url": string
+    }
+    "pointing-poker-http-api": {
+      "type": "sst.aws.ApiGatewayV2"
+      "url": string
+    }
+    "pointing-poker-table": {
+      "name": string
+      "type": "sst.aws.Dynamo"
+    }
+    "pointing-poker-ws-api": {
+      "managementEndpoint": string
+      "type": "sst.aws.ApiGatewayWebSocket"
+      "url": string
+    }
   }
 }
 /// <reference path="sst-env.d.ts" />
