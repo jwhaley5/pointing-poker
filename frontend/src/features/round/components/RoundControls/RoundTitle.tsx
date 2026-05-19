@@ -33,15 +33,17 @@ export function RoundTitle({ roomId }: RoundTitleProps) {
   }
 
   return (
-    <div className="flex flex-col gap-1">
-      <p className="text-sm">Story Description:</p>
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <label className="text-sm font-medium" htmlFor="round-title">
+        Story Description
+      </label>
       <input
-        className="input input-bordered"
+        id="round-title"
+        className="input input-bordered h-12 w-full max-w-full"
         value={editValue}
         onChange={handleInputChange}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        autoFocus
         placeholder="PROJ-123: User login"
       />
     </div>

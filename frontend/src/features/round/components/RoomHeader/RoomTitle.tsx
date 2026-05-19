@@ -35,16 +35,17 @@ export function RoomTitle({ roomId }: RoomTitleProps) {
   }
 
   return (
-    <div className="flex flex-col gap-2 mb-2">
-      <h2 className="font-bold">Room Name</h2>
+    <div className="mb-2 flex min-w-0 flex-col gap-2">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/70">
+        Room Name
+      </h2>
       <input
-        className="input input-bordered text-2xl font-bold"
+        className="input input-bordered h-12 w-full max-w-full text-2xl font-bold sm:w-80"
         value={editValue}
         onChange={handleInputChange}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         placeholder={snap?.title || `Room ${roomId}`}
-        autoFocus
       />
     </div>
   )

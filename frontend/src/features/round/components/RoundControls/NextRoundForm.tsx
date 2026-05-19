@@ -15,9 +15,9 @@ export function NextRoundForm({ roomId }: NextRoundFormProps) {
   }
 
   return (
-    <div className="join">
+    <div className="join w-full sm:w-auto">
       <button
-        className="btn btn-warning join-item"
+        className="btn btn-warning join-item min-h-12 w-full whitespace-nowrap sm:w-auto"
         onClick={handleStartRound}
         disabled={snap?.revealed === false}
       >

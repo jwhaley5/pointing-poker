@@ -15,20 +15,23 @@ export function MembersSidebar({ snap }: MembersSidebarProps) {
     <aside className="space-y-4">
       <div className="card bg-base-200 p-4">
         <h3 className="font-semibold mb-2">Members</h3>
-        <ul className="list-disc ml-5">
+        <ul className="space-y-1">
           {snap.members
             .filter((member: Member) => member.present)
             .map((member: Member) => (
               <li
                 key={member.memberId}
-                className={
+                className={`flex min-w-0 items-center gap-2 ${
                   member.memberId === snap.currentMemberId
                     ? "font-bold text-primary"
                     : ""
-                }
+                }`}
               >
-                {member.name}
-                {member.memberId === snap.currentMemberId ? " (You)" : ""}
+                <span aria-hidden="true">•</span>
+                <span className="truncate">
+                  {member.name}
+                  {member.memberId === snap.currentMemberId ? " (You)" : ""}
+                </span>
               </li>
             ))}
         </ul>
@@ -36,22 +39,25 @@ export function MembersSidebar({ snap }: MembersSidebarProps) {
         {snap.observers.length > 0 && (
           <>
             <h4 className="font-medium mt-4 mb-2 text-sm">Observers</h4>
-            <ul className="list-disc ml-5 text-sm opacity-70">
+            <ul className="space-y-1 text-sm opacity-70">
               {snap.observers
                 .filter((observer: Observer) => observer.present)
                 .map((observer: Observer) => (
                   <li
                     key={observer.observerId}
-                    className={
+                    className={`flex min-w-0 items-center gap-2 ${
                       observer.observerId === snap.currentObserverId
                         ? "font-bold text-secondary"
                         : ""
-                    }
+                    }`}
                   >
-                    {observer.name}
-                    {observer.observerId === snap.currentObserverId
-                      ? " (You)"
-                      : ""}
+                    <span aria-hidden="true">•</span>
+                    <span className="truncate">
+                      {observer.name}
+                      {observer.observerId === snap.currentObserverId
+                        ? " (You)"
+                        : ""}
+                    </span>
                   </li>
                 ))}
             </ul>
@@ -79,7 +85,7 @@ export function MembersSidebar({ snap }: MembersSidebarProps) {
                     })}
                   </div>
                 )}
-                <div className="flex text-base-content/50 items-center text-center gap-1">
+                <div className="flex items-center gap-1 text-base-content/50">
                   <p>
                     Average:{" "}
                     <span className="text-primary font-bold">
