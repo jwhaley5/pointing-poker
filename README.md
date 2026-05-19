@@ -20,3 +20,7 @@ cd shared && npm install && cd ..
 cd frontend && npm install && cd ..
 npm run dev
 ```
+
+## Architecture
+
+See [docs/architecture.md](docs/architecture.md) for the DynamoDB data model and WebSocket message flow.

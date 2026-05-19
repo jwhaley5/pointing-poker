@@ -4,3 +4,5 @@ node_modules
 .sst
 .aws 
 dist
+
+.DS_Store
