@@ -1,37 +1,52 @@
+import type { APIGatewayProxyWebsocketEventV2 } from "aws-lambda";
+import { requireRoomParticipant } from "./lib/auth";
 import { listRoomItems, pk, update } from "./lib/db";
-import { broadcastPersonalized, buildRoomBroadcast } from "./lib/ws";
-import type { SetRoomTitleMessage } from "@pointing-poker/shared-types";
+import {
+  activeConnectionsFromItems,
+  broadcastPersonalized,
+  buildRoomBroadcast,
+} from "./lib/ws";
+import { parseAndValidate } from "./lib/validation";
+import { isRoomRecord } from "./lib/types";
 
-export async function handler(event: any) {
-	const payload = JSON.parse(event.body || "{}") as SetRoomTitleMessage;
-	const { roomId, title } = payload;
-	
-	if (!roomId || !title) return { statusCode: 400, body: "roomId and title required" };
+export async function handler(event: APIGatewayProxyWebsocketEventV2) {
+  const { connectionId } = event.requestContext;
+  const payload = parseAndValidate(event.body);
+  if (!payload || payload.action !== "setRoomTitle") {
+    return { statusCode: 400, body: "Invalid setRoomTitle message" };
+  }
 
-	// Validate title length
-	if (title.trim().length === 0 || title.length > 100) {
-		return { statusCode: 400, body: "Title must be between 1 and 100 characters" };
-	}
+  const { roomId, title } = payload;
+  const auth = await requireRoomParticipant(connectionId, roomId);
+  if (!auth.ok) return auth.response;
 
-	const items = await listRoomItems(roomId);
-	const room = items.find((i: any) => i.SK === "ROOM");
-	if (!room) return { statusCode: 404, body: "Room not found" };
+  // Validate title length
+  if (title.trim().length === 0 || title.length > 100) {
+    return {
+      statusCode: 400,
+      body: "Title must be between 1 and 100 characters",
+    };
+  }
 
-	// Update room title
-	await update(
-		{ PK: pk(roomId), SK: "ROOM" },
-		"SET title = :title",
-		{},
-		{ ":title": title.trim() }
-	);
+  const items = await listRoomItems(roomId);
+  const room = items.find(isRoomRecord);
+  if (!room) return { statusCode: 404, body: "Room not found" };
 
-	// Get updated room data and broadcast to all members
-	const updatedItems = await listRoomItems(roomId);
-	const connections = updatedItems.filter((i: any) => i.SK.startsWith("CONN#")).map((i: any) => i.connectionId);
+  // Update room title
+  await update(
+    { PK: pk(roomId), SK: "ROOM" },
+    "SET title = :title",
+    {},
+    { ":title": title.trim() },
+  );
 
-	const roomBroadcast = buildRoomBroadcast(roomId, updatedItems, title.trim());
+  // Get updated room data and broadcast to all members
+  const updatedItems = await listRoomItems(roomId);
+  const connections = activeConnectionsFromItems(updatedItems);
 
-	await broadcastPersonalized(connections, roomBroadcast);
+  const roomBroadcast = buildRoomBroadcast(roomId, updatedItems, title.trim());
 
-	return { statusCode: 200 };
+  await broadcastPersonalized(connections, roomBroadcast);
+
+  return { statusCode: 200 };
 }

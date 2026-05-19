@@ -1,52 +1,75 @@
+import type { APIGatewayProxyWebsocketEventV2 } from "aws-lambda";
+import { requireRoomParticipant } from "./lib/auth";
 import { listRoomItems, pk, put, update, skRound } from "./lib/db";
-import { broadcastPersonalized, buildRoomBroadcast } from "./lib/ws";
+import {
+  activeConnectionsFromItems,
+  broadcastPersonalized,
+  buildRoomBroadcast,
+} from "./lib/ws";
+import { parseAndValidate } from "./lib/validation";
+import type { RoundRecord } from "./lib/types";
+import { isRoomRecord } from "./lib/types";
 
-export async function handler(event: any) {
-	const { roomId, title } = JSON.parse(event.body || "{}");
-	if (!roomId) return { statusCode: 400, body: "roomId required" };
+export async function handler(event: APIGatewayProxyWebsocketEventV2) {
+  const { connectionId } = event.requestContext;
+  const payload = parseAndValidate(event.body);
+  if (!payload || payload.action !== "startRound") {
+    return { statusCode: 400, body: "Invalid startRound message" };
+  }
 
-	const items = await listRoomItems(roomId);
-	const room = items.find((i: any) => i.SK === "ROOM");
-	if (!room) return { statusCode: 403, body: "forbidden" };
+  const { roomId, title } = payload;
+  const auth = await requireRoomParticipant(connectionId, roomId);
+  if (!auth.ok) return auth.response;
 
-	const currentRound = room.currentRound ?? 1;
-	const next = (room.roundsCount ?? currentRound) + 1;
+  const items = await listRoomItems(roomId);
+  const room = items.find(isRoomRecord);
+  if (!room) return { statusCode: 404, body: "Room not found" };
 
-	// Mark the current round as completed
-	if (currentRound > 0) {
-		await update(
-			{ PK: pk(roomId), SK: skRound(currentRound) },
-			"SET #completed = :time",
-			{ "#completed": "completedAt" },
-			{ ":time": new Date().toISOString() }
-		);
-	}
+  const currentRound = room.currentRound ?? 1;
+  const next = (room.roundsCount ?? currentRound) + 1;
+  const roundTitle = title?.trim() || `Round ${next}`;
 
-	// Update room to point to new current round
-	await update(
-		{ PK: pk(roomId), SK: "ROOM" },
-		"SET #cr = :n, #rc = :n, #rev = :f",
-		{ "#cr": "currentRound", "#rc": "roundsCount", "#rev": "revealed" },
-		{ ":n": next, ":f": false }
-	);
+  // Mark the current round as completed
+  if (currentRound > 0) {
+    await update(
+      { PK: pk(roomId), SK: skRound(currentRound) },
+      "SET #completed = :time",
+      { "#completed": "completedAt" },
+      { ":time": new Date().toISOString() },
+    );
+  }
 
-	// Create new round
-	await put({
-		PK: pk(roomId),
-		SK: skRound(next),
-		round: next,
-		title: title || `Round ${next}`,
-		revealed: false,
-		createdAt: new Date().toISOString(),
-	});
+  // Update room to point to new current round
+  await update(
+    { PK: pk(roomId), SK: "ROOM" },
+    "SET #cr = :n, #rc = :n, #rev = :f",
+    { "#cr": "currentRound", "#rc": "roundsCount", "#rev": "revealed" },
+    { ":n": next, ":f": false },
+  );
 
-	// Refresh items to get the updated data
-	const updatedItems = await listRoomItems(roomId);
-	const connections = updatedItems.filter((i: any) => i.SK.startsWith("CONN#")).map((i: any) => i.connectionId);
+  // Create new round
+  await put<RoundRecord>({
+    PK: pk(roomId),
+    SK: skRound(next),
+    round: next,
+    title: roundTitle,
+    revealed: false,
+    createdAt: new Date().toISOString(),
+    ttl: room.ttl,
+  });
 
-	const roomBroadcast = buildRoomBroadcast(roomId, updatedItems, undefined, title || `Round ${next}`);
+  // Refresh items to get the updated data
+  const updatedItems = await listRoomItems(roomId);
+  const connections = activeConnectionsFromItems(updatedItems);
 
-	await broadcastPersonalized(connections, roomBroadcast);
+  const roomBroadcast = buildRoomBroadcast(
+    roomId,
+    updatedItems,
+    undefined,
+    roundTitle,
+  );
 
-	return { statusCode: 200 };
+  await broadcastPersonalized(connections, roomBroadcast);
+
+  return { statusCode: 200 };
 }

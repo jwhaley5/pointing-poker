@@ -1,50 +1,89 @@
-import { get, listRoomItems, pk, put, update } from "./lib/db";
-import { broadcastPersonalized, buildRoomBroadcast } from "./lib/ws";
+import { randomUUID } from "crypto";
+import type { APIGatewayProxyWebsocketEventV2 } from "aws-lambda";
+import { get, listRoomItems, pk, put, skConnection, update } from "./lib/db";
+import {
+  activeConnectionsFromItems,
+  broadcastPersonalized,
+  buildRoomBroadcast,
+} from "./lib/ws";
 import { parseAndValidate } from "./lib/validation";
+import type {
+  MemberRecord,
+  ObserverRecord,
+  RoomConnectionRecord,
+  RoomRecord,
+} from "./lib/types";
 
-export async function handler(event: any) {
-	const { connectionId } = event.requestContext;
-	const payload = parseAndValidate(event.body || "{}");
-	
-	if (!payload || payload.action !== 'join') {
-		return { statusCode: 400, body: "Invalid join message" };
-	}
-	
-	const { roomId, name, role = 'member' } = payload as any;
-	const room = await get({ PK: pk(roomId), SK: "ROOM" });
+export async function handler(event: APIGatewayProxyWebsocketEventV2) {
+  const { connectionId } = event.requestContext;
+  const payload = parseAndValidate(event.body);
 
-	if (!room) {
-		return { statusCode: 404, body: "Room not found" };
-	}
+  if (!payload || payload.action !== "join") {
+    return { statusCode: 400, body: "Invalid join message" };
+  }
 
-	const now = Math.floor(Date.now() / 1000);
-	const participantId = connectionId;
+  const { roomId, name, role = "member" } = payload;
+  const room = await get<RoomRecord>({ PK: pk(roomId), SK: "ROOM" });
 
-	if (role === 'observer') {
-		const observerId = participantId;
-		const connectionRecord = { PK: pk(roomId), SK: `CONN#${connectionId}`, connectionId, observerId, ttl: now + 60 * 60 * 24 };
-		await put(connectionRecord);
-		await put({ PK: pk(roomId), SK: `OBSERVER#${observerId}`, observerId, name, present: true, joinedAt: now });
-	} else {
-		const memberId = participantId;
-		const connectionRecord = { PK: pk(roomId), SK: `CONN#${connectionId}`, connectionId, memberId, ttl: now + 60 * 60 * 24 };
-		await put(connectionRecord);
-		await put({ PK: pk(roomId), SK: `MEMBER#${memberId}`, memberId, name, present: true, joinedAt: now });
-	}
+  if (!room) {
+    return { statusCode: 404, body: "Room not found" };
+  }
 
-	await update(
-		{ PK: `CONN#${connectionId}`, SK: "META" },
-		"SET roomId = :roomId, #role = :role, participantId = :participantId, #ttl = :ttl",
-		{ "#role": "role", "#ttl": "ttl" },
-		{ ":roomId": roomId, ":role": role, ":participantId": participantId, ":ttl": now + 60 * 60 * 24 }
-	);
+  const now = Math.floor(Date.now() / 1000);
+  const connectionTtl = now + 60 * 60 * 24;
+  const roomTtl = room.ttl;
+  const participantId = payload.participantId ?? randomUUID();
+  const trimmedName = name.trim();
+  const connectionRecord: RoomConnectionRecord = {
+    PK: pk(roomId),
+    SK: skConnection(connectionId),
+    connectionId,
+    participantId,
+    role,
+    ttl: connectionTtl,
+  };
+  await put(connectionRecord);
 
-	// Build and broadcast snapshot
-	const items = await listRoomItems(roomId);
-	const connections = items.filter((i: any) => i.SK.startsWith("CONN#")).map((i: any) => i.connectionId);
-	const roomBroadcast = buildRoomBroadcast(roomId, items);
+  if (role === "observer") {
+    await put<ObserverRecord>({
+      PK: pk(roomId),
+      SK: `OBSERVER#${participantId}`,
+      observerId: participantId,
+      name: trimmedName,
+      present: true,
+      joinedAt: now,
+      ttl: roomTtl,
+    });
+  } else {
+    await put<MemberRecord>({
+      PK: pk(roomId),
+      SK: `MEMBER#${participantId}`,
+      memberId: participantId,
+      name: trimmedName,
+      present: true,
+      joinedAt: now,
+      ttl: roomTtl,
+    });
+  }
 
-	await broadcastPersonalized(connections, roomBroadcast);
+  await update(
+    { PK: `CONN#${connectionId}`, SK: "META" },
+    "SET roomId = :roomId, #role = :role, participantId = :participantId, #ttl = :ttl",
+    { "#role": "role", "#ttl": "ttl" },
+    {
+      ":roomId": roomId,
+      ":role": role,
+      ":participantId": participantId,
+      ":ttl": connectionTtl,
+    },
+  );
 
-	return { statusCode: 200 };
+  // Build and broadcast snapshot
+  const items = await listRoomItems(roomId);
+  const connections = activeConnectionsFromItems(items);
+  const roomBroadcast = buildRoomBroadcast(roomId, items);
+
+  await broadcastPersonalized(connections, roomBroadcast);
+
+  return { statusCode: 200 };
 }

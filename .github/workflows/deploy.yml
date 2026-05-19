@@ -12,9 +12,14 @@ on:
           - prod
           - qa
 
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       id-token: write
@@ -69,6 +74,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           role-session-name: pointing_poker_deployment_session
+          mask-aws-account-id: true
 
       - name: Typecheck
         run: npm run typecheck
@@ -79,17 +85,3 @@ jobs:
 
       - name: Deploy with SST
         run: npx sst deploy --stage "${SST_STAGE}"
-
-      - name: Publish deploy outputs
-        run: |
-          {
-            echo "## SST Outputs"
-            echo
-            echo "- Branch: ${GITHUB_REF_NAME}"
-            echo "- Environment: ${{ inputs.environment }}"
-            echo "- Stage: ${SST_STAGE}"
-            echo
-            echo '```json'
-            cat .sst/outputs.json
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
