@@ -1,40 +1,60 @@
+import type { APIGatewayProxyWebsocketEventV2 } from "aws-lambda";
+import { requireRoomParticipant } from "./lib/auth";
 import { listRoomItems, pk, update } from "./lib/db";
-import { broadcastPersonalized, buildRoomBroadcast } from "./lib/ws";
-import type { SetRoundTitleMessage } from "@pointing-poker/shared-types";
+import {
+  activeConnectionsFromItems,
+  broadcastPersonalized,
+  buildRoomBroadcast,
+} from "./lib/ws";
+import { parseAndValidate } from "./lib/validation";
+import { isRoomRecord } from "./lib/types";
 
-export async function handler(event: any) {
-	const payload = JSON.parse(event.body || "{}") as SetRoundTitleMessage;
-	const { roomId, title } = payload;
-	
-	if (!roomId || !title) return { statusCode: 400, body: "roomId and title required" };
+export async function handler(event: APIGatewayProxyWebsocketEventV2) {
+  const { connectionId } = event.requestContext;
+  const payload = parseAndValidate(event.body);
+  if (!payload || payload.action !== "setRoundTitle") {
+    return { statusCode: 400, body: "Invalid setRoundTitle message" };
+  }
 
-	// Validate title length
-	if (title.trim().length === 0 || title.length > 200) {
-		return { statusCode: 400, body: "Title must be between 1 and 200 characters" };
-	}
+  const { roomId, title } = payload;
+  const auth = await requireRoomParticipant(connectionId, roomId);
+  if (!auth.ok) return auth.response;
 
-	const items = await listRoomItems(roomId);
-	const room = items.find((i: any) => i.SK === "ROOM");
-	if (!room) return { statusCode: 404, body: "Room not found" };
+  // Validate title length
+  if (title.trim().length === 0 || title.length > 200) {
+    return {
+      statusCode: 400,
+      body: "Title must be between 1 and 200 characters",
+    };
+  }
 
-	const round = room.currentRound ?? 1;
-	const roundKey = `ROUND#${round.toString().padStart(4, "0")}`;
+  const items = await listRoomItems(roomId);
+  const room = items.find(isRoomRecord);
+  if (!room) return { statusCode: 404, body: "Room not found" };
 
-	// Update current round title
-	await update(
-		{ PK: pk(roomId), SK: roundKey },
-		"SET title = :title",
-		{},
-		{ ":title": title.trim() }
-	);
+  const round = room.currentRound ?? 1;
+  const roundKey = `ROUND#${round.toString().padStart(4, "0")}`;
 
-	// Get updated room data and broadcast to all members
-	const updatedItems = await listRoomItems(roomId);
-	const connections = updatedItems.filter((i: any) => i.SK.startsWith("CONN#")).map((i: any) => i.connectionId);
+  // Update current round title
+  await update(
+    { PK: pk(roomId), SK: roundKey },
+    "SET title = :title",
+    {},
+    { ":title": title.trim() },
+  );
 
-	const roomBroadcast = buildRoomBroadcast(roomId, updatedItems, undefined, title.trim());
+  // Get updated room data and broadcast to all members
+  const updatedItems = await listRoomItems(roomId);
+  const connections = activeConnectionsFromItems(updatedItems);
 
-	await broadcastPersonalized(connections, roomBroadcast);
+  const roomBroadcast = buildRoomBroadcast(
+    roomId,
+    updatedItems,
+    undefined,
+    title.trim(),
+  );
 
-	return { statusCode: 200 };
+  await broadcastPersonalized(connections, roomBroadcast);
+
+  return { statusCode: 200 };
 }
