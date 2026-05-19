@@ -15,7 +15,7 @@ export function RevealButton({ roomId, snap }: RevealButtonProps) {
 
   return (
     <button
-      className="btn btn-accent"
+      className="btn btn-accent min-h-12 w-full sm:w-auto"
       onClick={handleReveal}
       disabled={snap.revealed}
     >

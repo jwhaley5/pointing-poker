@@ -34,7 +34,7 @@ export function VotingCards({ roomId, snap }: VotingCardsProps) {
 
   return (
     <div className="card bg-base-200 p-4">
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-5 gap-2 sm:grid-cols-10">
         {CARDS.map((c) => {
           const isSelected = snap.currentRoundVotes[snap.currentMemberId!] === c
           return (
